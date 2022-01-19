@@ -1,0 +1,588 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+<script>
+    Function.prototype.myCall = function (context, ...arr){
+        if(context == null || context == undefined){
+            context = window
+        }else{
+            context = Object(context)
+        }
+        var specialPrototype = Symbol('特殊的属性')
+        context[specialPrototype] = this  //调用myCall时，this是调用myCall的方法（myCall是在函数对象上）
+        var result = context[specialPrototype](...arr)
+        delete context[specialPrototype] //避免造成全局污染
+        return result
+    }
+
+    Function.prototype.myApply = function (context){
+        if(context == null || context == undefined){
+            context = window
+        }else{
+            context = Object(context)
+        }
+
+        function isArrayLike(o){
+            if(
+                o && typeof o === 'object' && isFinite(o.length) && o.length>= 0 && o.length === Math.floor(o.length) && o.length < 4294967296
+            ){
+                return true
+            }else{
+                return false
+            }
+        }
+        let specialPrototype = Symbol('特殊的属性')
+        context[specialPrototype] = this
+        let args = arguments[1]
+        let result;
+        if(args){
+            if(!Array.isArray(args) && !isArrayLike(args)){
+                throw new TypeError('myApply 第二个参数不为数组并且不为类数组对象抛出错误');
+            }else{
+                args = Array.from(args)
+                result = context[specialPrototype](...args)
+            }
+        }else{
+            result = context[specialPrototype]()
+        }
+        delete context[specialPrototype]
+        return result
+    }
+
+
+    var obj1 = {
+        name:'one',
+        fn:function(){
+            console.log(this.name)
+        }
+    }
+    var obj2 = {
+        name:'two222',
+    }
+    // obj1.fn.myApply(obj2)
+    // function aa(){
+    //     var a = '11'
+    //     var a = '22'
+    //     // if(true){
+    //     //     console.log(a)
+    //     //     let a = '22'
+    //     // }
+    //     console.log(a)
+    // }
+    // aa()
+    function fn(num) {
+        return new Promise(resolve => {
+            setTimeout(() => {
+                resolve(num * 2)
+            }, 1000)
+        })
+    }
+
+    // function* gen() {
+    //     const next1 =  yield fn(1) //{ value: Promise { 2 }, done: false }
+    //     const next2 =  yield fn(next1)
+    //     return 3
+    // }
+    // let g = gen()
+    // g.next().value.then((res1)=>{
+    //     console.log(res1)
+    //     g.next(res1).value.then((res2)=>{
+    //         console.log(res2)
+    //         console.log(g.next())
+    //     })
+    // })
+    
+    
+    // console.log(g.next())
+    // console.log(g.next())
+    // console.log(g.next())
+    // function* gen() {
+    //     const num1 = yield fn(1)
+    //     console.log(num1) // 2
+    //     const num2 = yield fn(num1)
+    //     console.log(num2) // 4
+    //     const num3 = yield fn(num2)
+    //     console.log(num3) // 8
+    //     return num3
+    // }
+
+    // function myAsync(genF) {
+    //     return new Promise((resolve, reject)=> {
+    //         const gen = genF();
+    //         function step(nextF) {
+    //             let next;
+    //             try {
+    //                 next = nextF(); //{ value: Promise { 2 }, done: false }
+    //             } catch(e) {
+    //                 return reject(e); //监听异步函数fn()报错
+    //             }
+    //             if(next.done) { // 最后一步
+    //                 return resolve(next.value);
+    //             }
+    //             // 不是最后一步， next.value上一次异步函数传过来的值 传给下一步
+    //             // Promise.resolve(next.value) 等价于 new Promise(resolve => resolve(next.value))
+    //             // res == next.value 是Promise对象
+    //             Promise.resolve(next.value).then((res)=> {
+    //                 //.then之后 console.log(res) 2 4 8
+    //                 step(()=>  gen.next(res) );
+    //             }, (e)=>  {
+    //                 step(()=>  gen.throw(e));
+    //             });
+    //         }
+    //         step(()=> gen.next());
+    //     });
+    // }
+    // const genToAsync = myAsync(gen)
+    // genToAsync.then(res => console.log(res)) // 8
+function clone(target){
+    if(typeof target == 'object'){
+        let cloneTarget = {}
+        for(let key in target){
+            cloneTarget[key] = clone(target[key])
+        }
+        return cloneTarget
+    }else{
+        return target
+    }
+}
+
+function clone2(target){
+    if(typeof target === 'object'){
+        let cloneTarget = Array.isArray(target) ? [] : {}
+        for( const key in target){
+            cloneTarget[key] = clone2(target[key])
+        }
+    }else{
+        return target
+    }
+}
+function clone3(target, map = new Map()){
+    if(typeof target === 'object'){
+        const cloneTarget = Array.isArray(target) ? [] : {}
+        if(map.get(target)){
+            return map.get(target)
+        }
+        map.set(target,cloneTarget)
+        for(const key in target){
+            cloneTarget[key] = clone3(target[key],map)
+        }
+        return cloneTarget
+    }else{
+        return target
+    }
+}
+
+
+function* genF(){
+    const num1 = yield fn(1)
+    console.log(num1)
+    const num2 = yield fn(num1)
+    console.log(num2)
+    const num3 = yield fn(num2)
+    console.log(num3)
+    return num3
+}
+
+function myAsync2(genF){
+    return new Promise((resolve,reject)=>{
+        let gen = genF()
+        function step(nextF){
+            let next
+            try {
+                next = nextF()
+            } catch (error) {
+                throw reject(error)
+            }
+            if(next.done){
+                return resolve(next.value);
+            }else{
+                Promise.resolve(next.value).then(
+                    (res)=> step(()=> gen.next(res)),
+                    (e)=> step(()=> gen.throw(e))
+                )
+            }
+        }
+        step(()=> gen.next())
+    })
+}
+function myAsync3(genf){
+    return new Promise((resolve,reject)=>{
+        let gen = genf()
+        function step(nextf){
+            let next
+            try {
+                next = nextf()
+            } catch (error) {
+                throw reject(error)
+            }
+            if(next.done){
+                resolve(next.value)
+            }else{
+                Promise.resolve(next.value).then(
+                    (res)=>step(()=>gen.next(res)),
+                    (e)=>step(()=>gen.throw(e))
+                )
+            }
+        }
+        step(()=>gen.next())
+    })
+}
+// const genToAsync = myAsync2(genF)
+// console.log(genToAsync)
+// genToAsync.then(res => console.log(res)) // 8
+
+function debounce(func, delay){
+    let timer = null
+    return function(){
+        if (timer) clearTimeout(timer);
+        timer = setTimeout(()=>{
+            func.call(this)
+        },delay)
+    }
+}
+
+function debounce(func, delay){
+    let timer = null
+    return function(){
+        timer && clearTimeout(timer)
+        timer = setTimeout(()=>{
+            func.call(this,arguments)
+        },delay)
+    }
+}
+
+function throttle(fn,delay){
+    let scan = true
+    return function(){
+        if(!scan){
+            return
+        }
+        scan = false
+        setTimeout(()=>{
+            fn.call(this,arguments)
+            scan = true
+        },delay)
+    }
+}
+
+function debounce(fn,delay){
+    let timer = null
+    return function(){
+        if(timer){
+            clearTimeout(timer)
+        }
+        timer = setTimeout(()=>{
+            fn.call(this,arguments)
+        },delay)
+    }
+}
+
+function throttle(fn,delay){
+    let scan = true
+    return function(){
+        if(!scan){
+            return
+        }
+        scan = false
+        setTimeout(()=>{
+            fn.call(this,arguments)
+            scan = true
+        },delay)
+    }
+}
+
+const ajax = {
+    get(url,fn){
+        let xhr = new XMLHttpRequest()
+        xhr.open('GET',url,true)
+        xhr.onreadystatechange = function(){
+            if(xhr.readyState === 4){
+                fn(xhr.responseText)
+            }
+        }
+        xhr.send()
+    },
+    post(url,data,fn){
+        let xhr = new XMLHttpRequest()
+        xhr.open('POST',url,true)
+        xhr.setRequestHeader('Content-type','application/x-www-form-urlencoded')
+        xhr.onreadystatechange = function(){
+            if(xhr.readyState === 4){
+                fn(xhr.responseText)
+            }
+        }
+        xhr.send(data)
+    }
+}
+
+function myNew(fn,...args){
+    const obj = {}
+    obj = Object.create(fn.prototype)
+    fn.apply(obj,args)
+    return obj
+}
+
+function useSet(arr){
+    return [...new set(arr)]
+}
+
+function* genf(){
+    const num1 = yield fn(1)
+    const num2 = yield fn(num1)
+    const num3 = yield fn(num2)
+    return num3
+}
+
+function myAsync(genf){
+    return new Promise((resolve,reject)=>{
+        const gen = genf()
+        function step(nextF){
+            let next
+            try{
+                next = nextF()
+            }catch(e){
+                reject(e)
+            }
+            if(next.done){
+                return resolve(next.value)
+            }
+             Promise.resolve(next.value).then((res)=> step(gen.next(res)),(e)=> step(gen.throw(e)))
+            
+        }
+        step(()=>gen.next())
+    })
+}
+
+
+class myPromise {
+    constructor(executor){
+        this.PromiseState = 'pending'
+        this.PromiseResult = undefined
+        // 存放成功的回调
+        this.onFulfilledCallbacks = [];
+        // 存放失败的回调
+        this.onRejectedCallbacks= [];
+
+        let resolve = (value)=>{
+            if(this.PromiseState === 'pending'){
+                this.PromiseState = 'fulfilled'
+                this.PromiseResult = value
+                this.onFulfilledCallbacks.forEach(fn=>fn(this.PromiseResult))
+            }
+        }
+        let reject = (reason)=>{
+            if(this.PromiseState === 'pending'){
+                this.PromiseState = 'rejected'
+                this.PromiseResult = reason
+                this.onRejectedCallbacks.forEach(fn=>fn(this.PromiseResult))
+            }
+        }
+        try {
+            executor(resolve,reject)
+        } catch (error) {
+            reject(error)
+        }
+    }
+    then(onFulfilled, onRejected){
+        onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : val => val
+        onRejected = typeof onRejected === 'function' ? onRejected : reason => { throw reason }
+        if(this.PromiseState === 'fulfilled'){
+            onFulfilled(this.PromiseResult)
+        }
+        if(this.PromiseState === 'rejected'){
+            onRejected(this.PromiseResult)
+        }
+        if(this.PromiseState === 'pending'){
+           // 如果状态为待定状态，暂时保存两个回调
+           this.onFulfilledCallbacks.push(onFulfilled.bind(this))
+           this.onRejectedCallbacks.push(onRejected.bind(this))
+
+        }
+    }
+}
+
+// let promise = new myPromise((resolve,reject)=>{
+//     setTimeout(()=>{    
+//         resolve('111')
+//     },1000)
+// }).then(res => console.log(res), err => console.log(err))
+
+class myPromise2 {
+    constructor(executor){
+        this.status = 'pending'
+        this.result = null
+        this.onFulfilledList = []
+        this.onRejectedList = [] 
+        let resolve = (value)=>{
+            if(this.status === 'pending'){
+                this.status = 'fulfilled'
+                this.result = value
+                this.onFulfilledList.forEach(fn=>fn())
+            }
+        }
+        let reject = (value)=>{
+            if(this.status === 'pending'){
+                this.status = 'rejected'
+                this.result = value
+                this.onRejectedList.forEach(fn=>fn())
+            }
+        }
+        try {
+            executor(resolve,reject)
+        } catch (e) {
+            reject(e)
+        }
+        
+    }
+    then(onFulfilled,onRejected){
+        onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : val => val
+        onRejected = typeof onRejected === 'function' ? onRejected : reason => {throw reason}
+
+
+        let promise2 = new myPromise2((resolve,reject)=>{
+            const resolvePromise = cb => {
+                setTimeout(() => {
+                    try {
+                        const x = cb(this.result)
+                        if(x === myPromise2){
+                            throw new Error('不能返回自身。。。')
+                        }
+                        if(x instanceof myPromise2){
+                            x.then(resolve,reject)
+                        }else{
+                            resolve(x)
+                        }
+                    } catch (error) {
+                        reject(error)
+                        throw new Error(err)
+                    } 
+                })
+            }
+            if(this.status === 'fulfilled'){
+                // onFulfilled(this.result)
+                resolvePromise(onFulfilled)
+            }else if(this.status === 'rejected'){
+                // onRejected(this.result)
+                resolvePromise(onRejected)
+            }else if(this.status === 'pending'){
+                this.onFulfilledList.push(()=>resolvePromise(onFulfilled))
+                this.onRejectedList.push(()=>resolvePromise(onRejected))
+            }
+        })
+        
+        return promise2
+    }
+
+}
+// const test4 = new myPromise2((resolve, reject) => {
+//     setTimeout(()=>{
+//         resolve(1)
+//     },1000)
+// }).then(res => 4*res, err => console.log(err))
+// .then(res=> console.log(res))
+
+// console.log(2)
+
+
+class promise3 {
+    constructor(executor){
+        this.state = 'pending'
+        this.result = undefined
+        this.onFulfilledList = []
+        this.reRectedList = []
+
+        let resolve = (value)=>{
+            if(this.state === 'pending'){
+                this.state = 'fulfilled'
+                this.result = value
+                this.onFulfilledList.forEach(fn=>fn())
+            }
+        }
+        let reject = (value)=>{
+            if(this.state === 'pending'){
+                this.state = 'rejected'
+                this.result = value
+                this.reRectedList.forEach(fn=>fn())
+            }
+        }
+        try {
+            executor(resolve,reject)
+        } catch (error) {
+            reject(error)
+        }
+    }
+    then(onFilfilled,onRejected){
+        let promise = new promise3((resolve,reject)=>{
+            const resolvePromise = cb =>{
+                setTimeout(()=>{
+                    try{
+                        const x = cb(this.result)
+                        if(x === promise3){
+                            throw new Error('不能返回自身')
+                        }
+                        if(x instanceof promise3){
+                            x.then(resolve,reject)
+                        }else{
+                            resolve(x)
+                        }
+                    }catch(e){
+                        reject(e)
+                        throw e
+                    }
+                })
+            }
+            onFilfilled = typeof onFulfilled === 'function' ? onFulfilled : val=> val
+            onRejected = typeof onRejected === 'function' ? onRejected : reason=> {throw reason}
+
+            if(this.state === 'fulfilled'){
+                resolvePromise(onFilfilled)
+            }else if(this.state === 'rejected'){
+                resolvePromise(onRejected)
+            }else if(this.state === 'pending'){
+                this.onFulfilledList.push(()=>resolvePromise(onFilfilled))
+                this.reRectedList.push(()=>resolvePromise(onRejected))
+            }
+        })
+        return promise
+    }
+}
+// let promise = new promise3((resolve,reject)=>{
+//     setTimeout(()=>{    
+//         resolve('111')
+//     },1000)
+// }).then(res => console.log(res), err => console.log(err))
+
+
+Function.prototype.mybind = function(context){
+
+    if(typeof this !== 'function'){
+        throw new Error('不是函数')
+    }
+
+    let func = function(){}
+    
+    let args = Array.prototype.slice.call(arguments,1)
+    let self = this
+
+    let bfound = function(){
+        let args2 = Array.prototype.slice.call(arguments)
+        self.apply(this instanceof self ? this : context,args.concat(args2))
+    }
+    func.prototype = this.prototype
+    bfound.prototype = new func()
+
+
+    return bfound
+}
+
+</script>
+</html>

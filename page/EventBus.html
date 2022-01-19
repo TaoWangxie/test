@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+<script>
+    class eventBus{
+        constructor(){
+            this.events = {}
+            
+        }
+
+        on(eventName,cb){
+            let tasks = this.events[eventName]
+            if(tasks){
+                tasks.push(cb)
+            }else{
+                tasks = [cb]
+            }
+        }
+
+        emit(eventName,data){
+            let tasks = this.events[eventName]
+            if(tasks){
+                tasks.forEach((cb)=>{
+                    cb && cb(data)
+                })
+            }
+        }
+
+        off(eventName,cb){
+            let tasks = this.events[eventName]
+            if(tasks && tasks.indexOf(cb) > -1){
+                tasks.splice(tasks.indexOf(cb),1)
+            }
+        }
+
+        once(eventName,data){
+            let tasks = this.events[eventName]
+            if(tasks){
+                tasks.forEach((cb)=>{
+                    cb && cb(data)
+                })
+                delete tasks
+            }
+        }
+    }
+</script>
+</html>

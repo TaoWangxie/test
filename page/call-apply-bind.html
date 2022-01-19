@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+<script>
+    Function.prototype.mycall = function(context,...args){
+        context == null || context == undefined ? window : Object(context)
+        const symbolPrototype = Symbol('特殊属性')
+        context[symbolPrototype] = this
+        let result = context[symbolPrototype](...args)
+        delete context[symbolPrototype]
+        return result
+    }
+    Function.prototype.myapply = function(context){
+        context == null || context == undefined ? window : Object(context)
+        const symbolPrototype = Symbol('特殊')
+        context[symbolPrototype] = this
+        let args = [...arguments].slice(1)
+        let result = context[symbolPrototype](args)
+        delete context[symbolPrototype]
+        return result
+    }
+
+    Function.prototype.mybind = function(context){
+        const fn = this
+        let arg = [...arguments].slice(1)
+        const newfnuc = function(){
+            let newArg = arg.concat(...arguments)
+            if(this instanceof newfnuc){
+                fn.apply(this,newArg)
+            }else{
+                fn.apply(context,newArg)
+            }
+        }
+        newfnuc.prototype = Object.create(fn.prototype)
+        return newfnuc
+    }
+</script>
+</html>

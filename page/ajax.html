@@ -1,0 +1,37 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+<script>
+    const ajax = {
+        get(url,fn){
+            const xhr = XMLHttpRequest()
+            xhr.open('GET',url,true)
+            xhr.onreadystatechange = function(){
+                if(xhr.readyState === 4){
+                    fn(xhr.responeText)
+                }
+            }
+            xhr.send()
+        },
+        post(url,data,fn){
+            const xhr = XMLHttpRequest()
+            xhr.open('POST',url,true)
+            xhr.setResquestHeader('Content-type','application/x-www-form-urlencoded')
+            xhr.onreadystatechange = function(){
+                if(chr.readyState === 4){
+                    fn(xhr.responeText)
+                }
+            }
+            xhr.send(data)
+        }
+    }
+</script>
+</html>

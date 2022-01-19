@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+<script>
+    //防抖
+    function debounce(fn,daley){
+        let timer = null
+        return function(){
+            timer && clearTimeout()
+            timer = setTimeout(()=>{
+                fn.call(this,arguments)
+            })
+        }
+    }
+    //节流
+    function throttle(fn,daley){
+        let scan = true
+        return function(){
+            if(!scan){
+                return
+            }
+            scan = false
+            setTimeout(()=>{
+                fn.call(this,arguments)
+                scan = true
+            },daley)
+        }
+    }
+
+</script>
+</html>

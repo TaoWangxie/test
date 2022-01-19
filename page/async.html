@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+<script>
+    function fn(num){
+        return new Promise(resolve=>{
+            setTimeout(()=>{
+                console.log('111')
+                resolve(num * 2)
+            },1000)
+        })
+    }
+    function* gen(){
+        const res1 = yield fn(1)
+        const res2 = yield fn(res1)
+        const res3 = yield fn(res2)
+        return res3
+    }
+
+    function async(genF){
+        return new Promise((resolve,reject)=>{
+            const gen = genF()
+            function step(nextF){
+                let next
+                try {
+                    next = nextF()
+                } catch (error) {
+                    return reject(error)
+                }
+                if(next.done){
+                    return resolve(next.value)
+                }
+                new Promise.resolve(next.value).then((res)=>{
+                    step(()=>gen.next(res))
+                },(e)=>{
+                    step(()=>gen.throw(e))
+                })
+            }
+            step(()=>gen.next())
+        })
+    }
+</script>
+</html>

@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    
+</body>
+<script>
+    class myPromise{
+        constructor(excurtor){
+            this.state = 'pending'
+            this.result = null
+            this.onFulfilledList = []
+            this.onRejectedList = []
+            let resolve = (value)=>{
+                if(this.state === 'pending'){
+                    this.state = 'fulfilled'
+                    this.result = value
+                    this.onFulfilledList.forEach(cb=>cb())
+                }
+            }
+            let reject = (value)=>{
+                if(this.state === 'pending'){
+                    this.state = 'rejected'
+                    this.result = value
+                    this.onRejectedList.forEach(cb=>cb())
+                }
+            }
+            try{
+                excurtor(resolve,reject)
+            }catch(e){
+                reject(e)
+            }
+        }
+        then(onFulfilled,onRejected){
+            onFulfilled = typeof onFulfilled === 'function' ? onFulfilled : val=> val
+            onRejected = typeof onRejected === 'function' ? onRejected : reason=> { throw reason }
+            let promise2 = new myPromise((resolve,reject)=>{
+                const resolvePromise = cb =>{
+                    setTimeout(()=>{
+                        try {
+                            const x = cb(this.result)
+                            if(x === myPromise){
+                                throw Error('..')
+                            }
+                            if(x instanceof myPromise){
+                                x.then(resolve,reject)
+                            }else{
+                                resolve(x)
+                            } 
+                        } catch (error) {
+                            reject(error)
+                            throw error
+                        }
+                    })
+                }
+                if(this.state === 'pending'){
+                    this.onFulfilledList.push(()=>{resolvePromise(onFulfilled)})
+                    this.onRejectedList.push(()=>{resolvePromise(onRejected)})
+                }else if(this.state === 'fulfilled'){
+                    resolvePromise(onFulfilled)
+                }else if(this.state === 'rejected'){
+                    resolvePromise(onRejected)
+                }
+            })
+            return promise2
+        }
+    }
+</script>
+</html>
