@@ -10,6 +10,11 @@
     
 </body>
 <script>
-    
+    function flat(arr,depth = 1){
+        return depth > 0 ?
+        arr.reduce((res,item)=>{
+            return res.concat( Array.isArray(item) ? flat(item,depth - 1) : item)
+        },[]) : arr.slice()
+    }
 </script>
 </html>
